@@ -33,7 +33,7 @@
     margin:0;
     background: var(--bg);
     color: var(--text);
-    font-family: 'New Hero', sans-serif;
+    font-family: 'Sora', sans-serif;
     -webkit-font-smoothing: antialiased;
     padding: 28px 20px 60px;
   }
@@ -308,7 +308,7 @@
 <div class="wrap">
 
   <div class="page-title">
-    <h1>Capital Tracker</h1>
+    <h1>yeong tcg tracker</h1>
     <div class="meta">
       <span id="lastUpdated">Loading…</span>
       <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
@@ -441,7 +441,7 @@ function loadData(){
           "Updated " + new Date().toLocaleString();
       }catch(e){
         console.error(e);
-        showError("Loaded the sheet but couldn't read the columns. Check that headers match: Game, Item/Card, Quantity, Actual Cost, Remarks, Sold for, Profit, Initial capital, Capital Used, Capital L[...]
+        showError("Loaded the sheet but couldn't read the columns. Check that headers match: Game, Item/Card, Quantity, Actual Cost, Remarks, Sold for, Profit, Initial capital, Capital Used, Capital Left.");
       }
     },
     error: function(err){
@@ -504,7 +504,7 @@ function render(rows, fields){
   dataRows.forEach(r => {
     const game = kGame ? (r[kGame] || "").trim() : "";
     const item = kItem ? (r[kItem] || "").trim() : "";
-    const qty = kQty ? parseFloat((r[kQty]||"").toString().replace(/[^0-9.\-]/g,"")) : NaN;
+    const qty = kQty ? parseFloat((r[kQty]||"").toString().replace(/[^0-9.\-]/g,"") ) : NaN;
     const cost = kCost ? parseMoney(r[kCost]) : NaN;
     const soldRaw = kSold ? (r[kSold] || "").trim() : "";
     const sold = soldRaw ? parseMoney(soldRaw) : NaN;
