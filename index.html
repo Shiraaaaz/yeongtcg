@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capital Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --bg: #12141c;
+    --surface: #1b1e29;
+    --surface-2: #232734;
+    --line: #2c303e;
+    --text: #eceaf2;
+    --text-dim: #9296a8;
+    --gold: #d4af37;
+    --gold-soft: rgba(212,175,55,0.12);
+    --blue: #5b8def;
+    --blue-soft: rgba(91,141,239,0.12);
+    --green: #45c47e;
+    --green-soft: rgba(69,196,126,0.12);
+    --red: #e2574c;
+    --red-soft: rgba(226,87,76,0.12);
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 28px 20px 60px;
+  }
+
+  .wrap{
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  .page-title{
+    display:flex;
+    align-items:baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+  .page-title h1{
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .page-title .meta{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    display:flex;
+    align-items:center;
+    gap: 10px;
+  }
+  .refresh-btn{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 5px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .refresh-btn:hover{ border-color: var(--gold); color: var(--gold); }
+
+  /* ---- Banner for load errors ---- */
+  .banner{
+    display:none;
+    background: var(--red-soft);
+    border: 1px solid rgba(226,87,76,0.35);
+    color: var(--red);
+    font-size: 13px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+  .banner code{
+    background: rgba(255,255,255,0.08);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+
+  /* ---- Capital summary cards ---- */
+  .summary{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 30px;
+  }
+  .stat{
+    border-radius: 16px;
+    padding: 18px 18px 16px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  .stat .label{
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    opacity: 0.85;
+    margin-bottom: 10px;
+  }
+  .stat .value{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .stat.initial{ background: var(--blue-soft); }
+  .stat.initial .label{ color: var(--blue); }
+  .stat.used{ background: var(--gold-soft); }
+  .stat.used .label{ color: var(--gold); }
+  .stat.left{ background: var(--green-soft); }
+  .stat.left .label{ color: var(--green); }
+
+  .stat::after{
+    content:"";
+    position:absolute;
+    right: -18px;
+    bottom: -18px;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.05;
+  }
+  .stat.initial::after{ color: var(--blue); }
+  .stat.used::after{ color: var(--gold); }
+  .stat.left::after{ color: var(--green); }
+
+  /* ---- Section heading ---- */
+  .section-head{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    margin: 6px 0 14px;
+  }
+  .section-head h2{
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin: 0;
+  }
+  .section-head .rule{
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  /* ---- Table (desktop) ---- */
+  .table-card{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  table{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  thead th{
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    font-weight: 600;
+    padding: 12px 14px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  tbody td{
+    padding: 13px 14px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  tbody tr:last-child td{ border-bottom: none; }
+  tbody tr:hover{ background: rgba(255,255,255,0.015); }
+
+  .item-name{ font-weight: 600; }
+  .item-game{
+    display:inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--gold);
+    background: var(--gold-soft);
+    border-radius: 6px;
+    padding: 2px 7px;
+    margin-top: 4px;
+  }
+  .num{ font-family: 'JetBrains Mono', monospace; }
+  .remarks{ color: var(--text-dim); font-size: 12.5px; }
+
+  .status{
+    display:inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .status.pending{ background: rgba(146,150,168,0.15); color: var(--text-dim); }
+  .status.sold{ background: var(--green-soft); color: var(--green); }
+
+  .profit-pos{ color: var(--green); font-weight: 600; }
+  .profit-neg{ color: var(--red); font-weight: 600; }
+  .profit-pending{ color: var(--text-dim); }
+
+  /* ---- Totals row ---- */
+  tfoot td{
+    padding: 13px 14px;
+    font-weight: 700;
+    background: var(--surface-2);
+    border-top: 1px solid var(--line);
+  }
+
+  /* ---- Mobile cards ---- */
+  .mobile-cards{ display: none; }
+  .item-card{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .item-card .top{
+    display:flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+  .item-card .name{ font-weight: 600; font-size: 15px; }
+  .item-card .grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+    margin-top: 6px;
+  }
+  .item-card .field .k{
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    margin-bottom: 2px;
+  }
+  .item-card .field .v{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13.5px;
+  }
+  .item-card .remarks-row{
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--line);
+    font-size: 12.5px;
+    color: var(--text-dim);
+  }
+
+  .empty-state{
+    text-align:center;
+    padding: 40px 20px;
+    color: var(--text-dim);
+    font-size: 13.5px;
+  }
+
+  @media (max-width: 700px){
+    .summary{ grid-template-columns: 1fr; }
+    .table-card{ display:none; }
+    .mobile-cards{ display:block; }
+  }
+
+  .footnote{
+    text-align:center;
+    color: var(--text-dim);
+    font-size: 11.5px;
+    margin-top: 28px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="page-title">
+    <h1>Capital Tracker</h1>
+    <div class="meta">
+      <span id="lastUpdated">Loading…</span>
+      <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+    </div>
+  </div>
+
+  <div class="banner" id="errorBanner"></div>
+
+  <!-- 3 capital summary boxes -->
+  <div class="summary">
+    <div class="stat initial">
+      <div class="label">Initial Capital</div>
+      <div class="value" id="initialCapital">—</div>
+    </div>
+    <div class="stat used">
+      <div class="label">Capital Used</div>
+      <div class="value" id="capitalUsed">—</div>
+    </div>
+    <div class="stat left">
+      <div class="label">Capital Left</div>
+      <div class="value" id="capitalLeft">—</div>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <h2>Inventory</h2>
+    <div class="rule"></div>
+  </div>
+
+  <!-- Desktop table -->
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>Item / Card</th>
+          <th>Qty</th>
+          <th>Bought For</th>
+          <th>Sold For</th>
+          <th>Profit</th>
+          <th>Margin</th>
+          <th>Status</th>
+          <th>Remarks</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+      </tbody>
+      <tfoot>
+        <tr>
+          <td>Total</td>
+          <td class="num" id="totalQty">—</td>
+          <td class="num" id="totalCost">—</td>
+          <td class="num" id="totalSold">—</td>
+          <td id="totalProfit">—</td>
+          <td id="totalMargin">—</td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- Mobile cards -->
+  <div class="mobile-cards" id="mobileCards"></div>
+
+  <div class="footnote">Data pulled live from the published Google Sheet. Just update the sheet — this page refreshes on load.</div>
+
+</div>
+
+<script>
+/* ============================================================
+   CONFIG — paste your published Google Sheet CSV link below.
+   File > Share > Publish to web > select sheet > CSV > Publish
+   ============================================================ */
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS2udhMmkZinjvlZq73dA5ip1TeXpsWARcGjeYZeNT49UDUahBHdJUYsq9sbLqgi3tgyTPm6LQv3mKx/pub?output=csv";
+
+/* Expected columns (by header name, case-insensitive):
+   Game | Item/Card | Quantity | Actual Cost | Remarks |
+   Sold for | Profit | (skip) | (skip) |
+   Initial capital | Capital Used | Capital Left
+   Only the FIRST row needs Initial/Used/Left filled in. */
+
+function parseMoney(str){
+  if(str === undefined || str === null) return NaN;
+  const cleaned = String(str).replace(/[^0-9.\-]/g, "");
+  if(cleaned === "") return NaN;
+  return parseFloat(cleaned);
+}
+
+function fmtMoney(n){
+  if(isNaN(n)) return "—";
+  return "$" + n.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function fmtPercent(n){
+  if(isNaN(n)) return "—";
+  return n.toFixed(1) + "%";
+}
+
+function showError(msg){
+  const banner = document.getElementById("errorBanner");
+  banner.style.display = "block";
+  banner.innerHTML = msg;
+}
+
+function hideError(){
+  document.getElementById("errorBanner").style.display = "none";
+}
+
+function loadData(){
+  document.getElementById("lastUpdated").textContent = "Loading…";
+  hideError();
+
+  if(!CSV_URL || CSV_URL.indexOf("PASTE_YOUR") !== -1){
+    showError("No sheet connected yet. Open this file, find <code>CSV_URL</code> near the bottom of the script, and paste in your published Google Sheet CSV link.");
+    document.getElementById("lastUpdated").textContent = "Not connected";
+    return;
+  }
+
+  // cache-bust so GitHub Pages / browser doesn't serve a stale copy
+  const url = CSV_URL + (CSV_URL.includes("?") ? "&" : "?") + "cb=" + Date.now();
+
+  Papa.parse(url, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results){
+      try{
+        render(results.data, results.meta.fields);
+        document.getElementById("lastUpdated").textContent =
+          "Updated " + new Date().toLocaleString();
+      }catch(e){
+        console.error(e);
+        showError("Loaded the sheet but couldn't read the columns. Check that headers match: Game, Item/Card, Quantity, Actual Cost, Remarks, Sold for, Profit, Initial capital, Capital Used, Capital Left.");
+      }
+    },
+    error: function(err){
+      console.error(err);
+      showError("Couldn't load the sheet. Make sure it's published to the web as CSV (File → Share → Publish to web → CSV), and that <code>CSV_URL</code> is correct.");
+      document.getElementById("lastUpdated").textContent = "Failed to load";
+    }
+  });
+}
+
+function findKey(fields, ...candidates){
+  const lower = fields.map(f => (f||"").trim().toLowerCase());
+  for(const c of candidates){
+    const idx = lower.indexOf(c.toLowerCase());
+    if(idx !== -1) return fields[idx];
+  }
+  return null;
+}
+
+function render(rows, fields){
+  const kGame    = findKey(fields, "Game");
+  const kItem    = findKey(fields, "Item/Card", "Item", "Card");
+  const kQty     = findKey(fields, "Quantity", "Qty");
+  const kCost    = findKey(fields, "Actual Cost", "Cost");
+  const kRemarks = findKey(fields, "Remarks");
+  const kSold    = findKey(fields, "Sold for", "Sold For");
+  const kProfit  = findKey(fields, "Profit");
+  const kInitial = findKey(fields, "Initial capital");
+  const kUsed    = findKey(fields, "Capital Used");
+  const kLeft    = findKey(fields, "Capital Left");
+
+  // Filter out fully blank rows
+  const dataRows = rows.filter(r => kItem && (r[kItem] || "").trim() !== "");
+
+  // Capital summary — pull from the first row that has values
+  let initial = NaN, used = NaN, left = NaN;
+  for(const r of rows){
+    if(isNaN(initial) && kInitial && r[kInitial]) initial = parseMoney(r[kInitial]);
+    if(isNaN(used) && kUsed && r[kUsed]) used = parseMoney(r[kUsed]);
+    if(isNaN(left) && kLeft && r[kLeft]) left = parseMoney(r[kLeft]);
+  }
+  document.getElementById("initialCapital").textContent = fmtMoney(initial);
+  document.getElementById("capitalUsed").textContent = fmtMoney(used);
+  document.getElementById("capitalLeft").textContent = fmtMoney(left);
+
+  const tbody = document.getElementById("tableBody");
+  const mobile = document.getElementById("mobileCards");
+  tbody.innerHTML = "";
+  mobile.innerHTML = "";
+
+  if(dataRows.length === 0){
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No items found in the sheet yet.</td></tr>';
+    mobile.innerHTML = '<div class="empty-state">No items found in the sheet yet.</div>';
+    updateTotals(0,0,0,NaN);
+    return;
+  }
+
+  let totalQty = 0, totalCost = 0, totalSold = 0, anySold = false, totalProfit = 0;
+
+  dataRows.forEach(r => {
+    const game = kGame ? (r[kGame] || "").trim() : "";
+    const item = kItem ? (r[kItem] || "").trim() : "";
+    const qty = kQty ? parseFloat((r[kQty]||"").toString().replace(/[^0-9.\-]/g,"")) : NaN;
+    const cost = kCost ? parseMoney(r[kCost]) : NaN;
+    const soldRaw = kSold ? (r[kSold] || "").trim() : "";
+    const sold = soldRaw ? parseMoney(soldRaw) : NaN;
+    const remarks = kRemarks ? (r[kRemarks] || "").trim() : "";
+    const hasSold = soldRaw !== "" && !isNaN(sold);
+
+    let profit = kProfit && r[kProfit] ? parseMoney(r[kProfit]) : NaN;
+    if(isNaN(profit) && hasSold && !isNaN(cost)) profit = sold - cost;
+
+    let margin = NaN;
+    if(!isNaN(profit) && !isNaN(cost) && cost !== 0) margin = (profit / cost) * 100;
+
+    if(!isNaN(qty)) totalQty += qty;
+    if(!isNaN(cost)) totalCost += cost;
+    if(hasSold && !isNaN(sold)){ totalSold += sold; anySold = true; }
+    if(hasSold && !isNaN(profit)) totalProfit += profit;
+
+    const profitClass = isNaN(profit) ? "profit-pending" : (profit >= 0 ? "profit-pos" : "profit-neg");
+    const statusHtml = hasSold
+      ? '<span class="status sold">Sold</span>'
+      : '<span class="status pending">Pending</span>';
+
+    // Desktop row
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>
+        <div class="item-name">${escapeHtml(item)}</div>
+        ${game ? `<span class="item-game">${escapeHtml(game)}</span>` : ""}
+      </td>
+      <td class="num">${isNaN(qty) ? "—" : qty}</td>
+      <td class="num">${fmtMoney(cost)}</td>
+      <td class="num">${hasSold ? fmtMoney(sold) : "—"}</td>
+      <td class="${profitClass}">${isNaN(profit) ? "—" : fmtMoney(profit)}</td>
+      <td class="${profitClass}">${fmtPercent(margin)}</td>
+      <td>${statusHtml}</td>
+      <td class="remarks">${escapeHtml(remarks) || "—"}</td>
+    `;
+    tbody.appendChild(tr);
+
+    // Mobile card
+    const card = document.createElement("div");
+    card.className = "item-card";
+    card.innerHTML = `
+      <div class="top">
+        <div class="name">${escapeHtml(item)}</div>
+        ${statusHtml}
+      </div>
+      ${game ? `<span class="item-game">${escapeHtml(game)}</span>` : ""}
+      <div class="grid">
+        <div class="field"><div class="k">Qty</div><div class="v">${isNaN(qty) ? "—" : qty}</div></div>
+        <div class="field"><div class="k">Bought For</div><div class="v">${fmtMoney(cost)}</div></div>
+        <div class="field"><div class="k">Sold For</div><div class="v">${hasSold ? fmtMoney(sold) : "—"}</div></div>
+        <div class="field"><div class="k">Profit</div><div class="v ${profitClass}">${isNaN(profit) ? "—" : fmtMoney(profit)}</div></div>
+        <div class="field"><div class="k">Margin</div><div class="v ${profitClass}">${fmtPercent(margin)}</div></div>
+      </div>
+      <div class="remarks-row">${escapeHtml(remarks) || "—"}</div>
+    `;
+    mobile.appendChild(card);
+  });
+
+  updateTotals(totalQty, totalCost, anySold ? totalSold : NaN, anySold ? totalProfit : NaN, totalCost);
+}
+
+function updateTotals(qty, cost, sold, profit, costForMargin){
+  document.getElementById("totalQty").textContent = qty || qty === 0 ? qty : "—";
+  document.getElementById("totalCost").textContent = fmtMoney(cost);
+  document.getElementById("totalSold").textContent = isNaN(sold) ? "—" : fmtMoney(sold);
+  const profitEl = document.getElementById("totalProfit");
+  const marginEl = document.getElementById("totalMargin");
+  if(isNaN(profit)){
+    profitEl.textContent = "—";
+    marginEl.textContent = "—";
+    profitEl.className = "";
+    marginEl.className = "";
+  }else{
+    const cls = profit >= 0 ? "profit-pos" : "profit-neg";
+    profitEl.textContent = fmtMoney(profit);
+    marginEl.textContent = fmtPercent(costForMargin ? (profit/costForMargin)*100 : NaN);
+    profitEl.className = cls;
+    marginEl.className = cls;
+  }
+}
+
+function escapeHtml(str){
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+loadData();
+</script>
+</body>
+</html>
