@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=New+Hero:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
   :root{
@@ -32,7 +33,7 @@
     margin:0;
     background: var(--bg);
     color: var(--text);
-    font-family: 'Sora', sans-serif;
+    font-family: 'New Hero', sans-serif;
     -webkit-font-smoothing: antialiased;
     padding: 28px 20px 60px;
   }
@@ -65,7 +66,7 @@
     gap: 10px;
   }
   .refresh-btn{
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'New Hero', monospace;
     font-size: 11px;
     background: var(--surface-2);
     border: 1px solid var(--line);
@@ -118,9 +119,9 @@
     margin-bottom: 10px;
   }
   .stat .value{
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 26px;
-    font-weight: 600;
+    font-family: 'New Hero', monospace;
+    font-size: 32px;
+    font-weight: 800;
     letter-spacing: -0.01em;
   }
   .stat.initial{ background: var(--blue-soft); }
@@ -210,7 +211,11 @@
     padding: 2px 7px;
     margin-top: 4px;
   }
-  .num{ font-family: 'JetBrains Mono', monospace; }
+  .num{ 
+    font-family: 'New Hero', monospace;
+    font-weight: 700;
+    font-size: 14px;
+  }
   .remarks{ color: var(--text-dim); font-size: 12.5px; }
 
   .status{
@@ -224,8 +229,8 @@
   .status.pending{ background: rgba(146,150,168,0.15); color: var(--text-dim); }
   .status.sold{ background: var(--green-soft); color: var(--green); }
 
-  .profit-pos{ color: var(--green); font-weight: 600; }
-  .profit-neg{ color: var(--red); font-weight: 600; }
+  .profit-pos{ color: var(--green); font-weight: 700; }
+  .profit-neg{ color: var(--red); font-weight: 700; }
   .profit-pending{ color: var(--text-dim); }
 
   /* ---- Totals row ---- */
@@ -266,8 +271,9 @@
     margin-bottom: 2px;
   }
   .item-card .field .v{
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 13.5px;
+    font-family: 'New Hero', monospace;
+    font-size: 14px;
+    font-weight: 700;
   }
   .item-card .remarks-row{
     margin-top: 10px;
@@ -435,7 +441,7 @@ function loadData(){
           "Updated " + new Date().toLocaleString();
       }catch(e){
         console.error(e);
-        showError("Loaded the sheet but couldn't read the columns. Check that headers match: Game, Item/Card, Quantity, Actual Cost, Remarks, Sold for, Profit, Initial capital, Capital Used, Capital Left.");
+        showError("Loaded the sheet but couldn't read the columns. Check that headers match: Game, Item/Card, Quantity, Actual Cost, Remarks, Sold for, Profit, Initial capital, Capital Used, Capital L[...]
       }
     },
     error: function(err){
@@ -531,8 +537,8 @@ function render(rows, fields){
       <td class="num">${isNaN(qty) ? "—" : qty}</td>
       <td class="num">${fmtMoney(cost)}</td>
       <td class="num">${hasSold ? fmtMoney(sold) : "—"}</td>
-      <td class="${profitClass}">${isNaN(profit) ? "—" : fmtMoney(profit)}</td>
-      <td class="${profitClass}">${fmtPercent(margin)}</td>
+      <td class="num ${profitClass}">${isNaN(profit) ? "—" : fmtMoney(profit)}</td>
+      <td class="num ${profitClass}">${fmtPercent(margin)}</td>
       <td>${statusHtml}</td>
       <td class="remarks">${escapeHtml(remarks) || "—"}</td>
     `;
